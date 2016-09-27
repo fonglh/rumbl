@@ -1,6 +1,9 @@
 defmodule Rumbl.VideoController do
   use Rumbl.Web, :controller
 
+  # wasn't added by generator, though the book says it should be
+  plug :scrub_params, "video" when action in [:create, :update]
+
   alias Rumbl.Video
 
   def index(conn, _params) do

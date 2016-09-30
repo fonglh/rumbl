@@ -3,6 +3,7 @@ defmodule Rumbl.VideoController do
 
   # wasn't added by generator, though the book says it should be
   plug :scrub_params, "video" when action in [:create, :update]
+  plug :load_categories when action in [:new, :create, :edit, :update]
 
   # every controller has this, we're overriding it to call actions
   # with the user as an argument.
@@ -82,5 +83,14 @@ defmodule Rumbl.VideoController do
   # return a query of all videos scoped to a given user
   defp user_videos(user) do
     assoc(user, :videos)
+  end
+
+  defp load_categories(conn, _) do
+    query =
+      Category
+      |> Category.alphabetical
+      |> Category.names_and_ids
+    categories = Repo.all query
+    assign(conn, :categories, categories)
   end
 end

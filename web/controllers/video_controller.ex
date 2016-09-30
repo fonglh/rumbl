@@ -13,6 +13,7 @@ defmodule Rumbl.VideoController do
   end
 
   alias Rumbl.Video
+  alias Rumbl.Category
 
   def index(conn, _params, user) do
     videos = Repo.all(user_videos(user))

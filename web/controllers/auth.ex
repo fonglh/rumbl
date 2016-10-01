@@ -7,8 +7,18 @@ defmodule Rumbl.Auth do
 
   def call(conn, repo) do
     user_id = get_session(conn, :user_id)
-    user = user_id && repo.get(Rumbl.User, user_id)
-    assign(conn, :current_user, user)
+
+    cond do
+      # return the current connection if we already have a current_user.
+      # this makes the code more testable, no need to write mocks or build
+      # elaborate scaffolding.
+      user = conn.assigns[:current_user] ->
+        conn
+      user = user_id && repo.get(Rumbl.User, user_id) ->
+        assign(conn, :current_user, user)
+      true ->
+        assign(conn, :current_user, nil)
+    end
   end
 
   def login(conn, user) do

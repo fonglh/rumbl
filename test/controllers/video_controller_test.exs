@@ -59,4 +59,33 @@ defmodule Rumbl.VideoControllerTest do
     assert html_response(conn, 200) =~ "check the errors"
     assert video_count(Video) == count_before
   end
+
+  @tag login_as: "max"
+  test "authorizes actions against access by other users",
+    %{conn: conn, user: owner} do
+
+      # create a video with user "max", then create a user named
+      # 'sneaky', log him in  and see if he can access max's video.
+      video = insert_video(owner, @valid_attrs)
+      non_owner = insert_user(username: "sneaky")
+      conn = assign(conn, :current_user, non_owner)
+
+      # the controllers raise the Ecto.NoResults error, which the 
+      # adapter translates to 404 for production deployment.
+      assert_error_sent :not_found, fn ->
+        get(conn, video_path(conn, :show, video))
+      end
+
+      assert_error_sent :not_found, fn ->
+        get(conn, video_path(conn, :edit, video))
+      end
+
+      assert_error_sent :not_found, fn ->
+        get(conn, video_path(conn, :update, video, video: @valid_attrs))
+      end
+
+      assert_error_sent :not_found, fn ->
+        get(conn, video_path(conn, :delete, video))
+      end
+  end
 end

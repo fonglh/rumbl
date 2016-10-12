@@ -22,6 +22,8 @@ defmodule Rumbl.Router do
     
     # new to show the form, create to login, delete to logout
     resources "/sessions", SessionController, only: [:new, :create, :delete]
+
+    get "/watch/:id", WatchController, :show
   end
 
   scope "/manage", Rumbl do

@@ -23,6 +23,7 @@ let Video = {
     // this will be used to connect ES6 client to Phoenix VideoChannel
     // convention for topic identifiers
     let vidChannel = socket.channel("videos:" + videoId)
+    vidChannel.on("ping", ({count}) => console.log("PING", count) )
 
     // create a new channel object from our socket and give it a topic
     vidChannel.join()

@@ -43,7 +43,10 @@ let Video = {
 
     // create a new channel object from our socket and give it a topic
     vidChannel.join()
-      .receive("ok", resp => console.log("joined the video channel", resp) )
+      .receive("ok", ({annotations}) => {
+        // pick up join response from server with the annotations in the db.
+        annotations.forEach( ann => this.renderAnnotation(msgContainer, ann) )
+      })
       .receive("error", reason => console.log("join failed", reason) )
   },
 

@@ -1,10 +1,28 @@
 defmodule Rumbl.VideoChannel do
   use Rumbl.Web, :channel
+  alias Rumbl.AnnotationView
 
   # Clients can join topics on a channel
   # Return {:ok, socket} to authorize a join attempt or {:error, socket} to deny one.
   def join("videos:" <> video_id, _params, socket) do
-    {:ok, assign(socket, :video_id, String.to_integer(video_id))}
+    # Fetch a video from the repo
+    video_id = String.to_integer(video_id)
+    video = Repo.get!(Rumbl.Video, video_id)
+
+    # Fetch the video's annotations, to use data in an association, it must be fetched
+    # explicitly, hence the preload.
+    annotations = Repo.all(
+      from a in assoc(video, :annotations),
+        order_by: [asc: a.at, asc: a.id],
+        limit: 200,
+        preload: [:user]
+    )
+
+    # Compose a response by rendering an annotation.json view for every annotation
+    # using the render_many function.
+    resp = %{annotations: Phoenix.View.render_many(annotations, AnnotationView,
+                                                    "annotation.json")}
+    {:ok, resp, assign(socket, :video_id, video_id)}
   end
 
   # Ensure all incoming events have the current user.

@@ -23,7 +23,11 @@ let Video = {
     // this will be used to connect ES6 client to Phoenix VideoChannel
     // convention for topic identifiers
     let vidChannel = socket.channel("videos:" + videoId)
-    // TODO join the vidChannel
+
+    // create a new channel object from our socket and give it a topic
+    vidChannel.join()
+      .receive("ok", resp => console.log("joined the video channel", resp) )
+      .receive("error", reason => console.log("join failed", reason) )
   }
 }
 export default Video

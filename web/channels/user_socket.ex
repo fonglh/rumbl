@@ -3,6 +3,8 @@ defmodule Rumbl.UserSocket do
 
   ## Channels
   # channel "room:*", Rumbl.RoomChannel
+  # categorizes topics with a resource name followed by resource ID.
+  channel "videos:*", Rumbl.VideoChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket

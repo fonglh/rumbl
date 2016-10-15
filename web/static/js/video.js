@@ -43,9 +43,10 @@ let Video = {
 
     // create a new channel object from our socket and give it a topic
     vidChannel.join()
-      .receive("ok", ({annotations}) => {
-        // pick up join response from server with the annotations in the db.
-        annotations.forEach( ann => this.renderAnnotation(msgContainer, ann) )
+      .receive("ok", resp => {
+        // schedule annotations to render based on current player time,
+        // instead of rendering all of them on join.
+        this.scheduleMessages(msgContainer, resp.annotations)
       })
       .receive("error", reason => console.log("join failed", reason) )
   },
@@ -57,17 +58,47 @@ let Video = {
     return div.innerHTML
   },
 
+  // renders a single annotation
   renderAnnotation(msgContainer, {user, body, at}){
     // build a DOM node with the user's name and annotation body
     let template = document.createElement("div")
     template.innerHTML = `
     <a href="#" data-seek="${this.esc(at)}">
+      [${this.formatTime(at)}]
       <b>${this.esc(user.username)}</b>: ${this.esc(body)}
     </a>
      `
     // append it to the msgContainer list and scroll to the right point.
     msgContainer.appendChild(template)
     msgContainer.scrollTop = msgContainer.scrollHeight
+  },
+
+  scheduleMessages(msgContainer, annotations){
+    // start an interval timer that fires every second
+    setTimeout(() => {
+      let ctime = Player.getCurrentTime()
+      let remaining = this.renderAtTime(annotations, ctime, msgContainer)
+      this.scheduleMessages(msgContainer, remaining)
+    }, 1000)
+  },
+
+  renderAtTime(annotations, seconds, msgContainer){
+    return annotations.filter( ann => {
+      // yet to appear, keep for the next call
+      if(ann.at > seconds){
+        return true
+      } else {
+        // render the annotation, exclude it from the remaining set
+        this.renderAnnotation(msgContainer, ann)
+        return false
+      }
+    })
+  },
+
+  formatTime(at){
+    let date = new Date(null)
+    date.setSeconds(at / 1000)
+    return date.toISOString().substr(14, 5)
   }
 }
 export default Video

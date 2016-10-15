@@ -35,6 +35,14 @@ let Video = {
       msgInput.value = ""
     })
 
+    msgContainer.addEventListener("click", e => {
+      e.preventDefault()
+      let seconds = e.target.getAttribute("data-seek") ||
+                    e.target.parentNode.getAttribute("data-seek")
+      if(!seconds){ return }
+      Player.seekTo(seconds)
+    })
+
     // when users post new annotations, the server will broadcast the event to
     // the clients. This handles the event.
     vidChannel.on("new_annotation", (resp) => {

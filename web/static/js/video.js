@@ -46,12 +46,20 @@ let Video = {
     // when users post new annotations, the server will broadcast the event to
     // the clients. This handles the event.
     vidChannel.on("new_annotation", (resp) => {
+      // channel on the client holds a params object and sends it to the server
+      // every time we call channel.join()
+      // modify this object to store the last_seen_id when new_annotation event
+      // is received.
+      vidChannel.params.last_seen_id = resp.id
       this.renderAnnotation(msgContainer, resp)
     })
 
     // create a new channel object from our socket and give it a topic
     vidChannel.join()
       .receive("ok", resp => {
+        // store the max annotation ID as the last seen ID
+        let ids = resp.annotations.map(ann => ann.id)
+        if(ids.length > 0){ vidChannel.params.last_seen_id = Math.max(...ids) }
         // schedule annotations to render based on current player time,
         // instead of rendering all of them on join.
         this.scheduleMessages(msgContainer, resp.annotations)

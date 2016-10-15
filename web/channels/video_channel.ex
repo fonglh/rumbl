@@ -4,15 +4,20 @@ defmodule Rumbl.VideoChannel do
 
   # Clients can join topics on a channel
   # Return {:ok, socket} to authorize a join attempt or {:error, socket} to deny one.
-  def join("videos:" <> video_id, _params, socket) do
+  def join("videos:" <> video_id, params, socket) do
+    # 0 is for a fresh connection since a user has yet to see an annotation.
+    last_seen_id = params["last_seen_id"] || 0
+
     # Fetch a video from the repo
     video_id = String.to_integer(video_id)
     video = Repo.get!(Rumbl.Video, video_id)
 
     # Fetch the video's annotations, to use data in an association, it must be fetched
     # explicitly, hence the preload.
+    # Only grab annotations with IDs greater than last_seen_id
     annotations = Repo.all(
       from a in assoc(video, :annotations),
+        where: a.id > ^last_seen_id,
         order_by: [asc: a.at, asc: a.id],
         limit: 200,
         preload: [:user]

@@ -48,12 +48,16 @@ defmodule Rumbl.VideoChannel do
         # the payload is an arbitrary map.
         # we can send as many messages as we like.
         # DO NOT forward along the raw payload.
-        broadcast! socket, "new_annotation", %{
-          id: annotation.id,
-          user: Rumbl.UserView.render("user.json", %{user: user}),
-          body: annotation.body,
-          at: annotation.at
-        }
+        #broadcast! socket, "new_annotation", %{
+        #  id: annotation.id,
+        #  user: Rumbl.UserView.render("user.json", %{user: user}),
+        #  body: annotation.body,
+        #  at: annotation.at
+        #}
+        broadcast_annotation(socket, annotation)
+        # important to use a Task here so we don't block on any particular messages arriving
+        # to the channel.
+        Task.start_link(fn -> compute_additional_info(annotation, socket) end)
 
         # sends reply back to the client with status and socket
         # can also use :noreply, but it's common practice to acknowledge the
@@ -66,5 +70,30 @@ defmodule Rumbl.VideoChannel do
         {:reply, {:error, %{errors: changeset}}, socket}
     end
 
+  end
+
+  # Reports annotation to all subscribers on this topic.
+  defp broadcast_annotation(socket, annotation) do
+    annotation = Repo.preload(annotation, :user)
+    rendered_ann = Phoenix.View.render(AnnotationView, "annotation.json",
+                                       %{annotation: annotation})
+    broadcast! socket, "new_annotation", rendered_ann
+  end
+
+  defp compute_additional_info(annotation, socket) do
+    # call our info system for 1 result, maximum wait 10 secs.
+    for result <- Rumbl.InfoSys.compute(annotation.body, limits: 1, timeout: 10_000) do
+      attrs = %{url: result.url, body: result.text, at: annotation.at}
+      info_changeset =
+        # query db for user matching each backend
+        Repo.get_by!(Rumbl.User, username: result.backend)
+        |> build_assoc(:annotations, video_id: annotation.video_id)
+        |> Rumbl.Annotation.changeset(attrs)
+
+      case Repo.insert(info_changeset) do
+        {:ok, info_ann} -> broadcast_annotation(socket, info_ann)
+        {:error, _changeset} -> :ignore
+      end
+    end
   end
 end

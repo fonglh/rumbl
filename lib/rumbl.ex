@@ -14,6 +14,9 @@ defmodule Rumbl do
       supervisor(Rumbl.Endpoint, []),
       # Start your own worker by calling: Rumbl.Worker.start_link(arg1, arg2, arg3)
       # worker(Rumbl.Worker, [arg1, arg2, arg3]),
+
+      # Add new supervisor to app's supervision tree
+      supervisor(Rumbl.InfoSys.Supervisor, []),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

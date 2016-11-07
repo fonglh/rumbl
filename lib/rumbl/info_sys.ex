@@ -33,8 +33,13 @@ defmodule Rumbl.InfoSys do
     {pid, monitor_ref, query_ref}
   end
 
-  defp await_results(children, _opts) do
-    await_result(children, [], :infinity)
+  defp await_results(children, opts) do
+    timeout = opts[:timeout] || 5000
+    timer = Process.send_after(self(), :timedout, timeout)
+    results = await_result(children, [], :infinity)
+    cleanup(timer)
+
+    results
   end
 
   defp await_result([head|tail], acc, timeout) do
@@ -52,11 +57,41 @@ defmodule Rumbl.InfoSys do
       # Recurse without adding to the accumulator.
       {:DOWN, ^monitor_ref, :process, ^pid, _reason} ->
         await_result(tail, acc, timeout)
+      # kill the backend we are waiting on and move to the next one.
+      # use a timeout of 0 for subsequent calls.
+      :timedout ->
+        kill(pid, monitor_ref)
+        await_result(tail, acc, 0)
+
+    # setting timeout to 0 triggers this branch for subsequent backends unless a reply
+    # is already in the process inbox.
+    after
+      timeout ->
+        kill(pid, monitor_ref)
+        await_result(tail, acc, 0)
     end
   end
 
   # base case, ends recursion when list has been processed.
   defp await_result([], acc, _) do
     acc
+  end
+
+  # Removes the monitor and sends the :kill message to the backend process.
+  defp kill(pid, ref) do
+    Process.demonitor(ref, [:flush])
+    Process.exit(pid, :kill)
+  end
+
+  # cancel the timer in case it wasn't yet triggered
+  # flush :timedout message to inbox if it was already sent.
+  defp cleanup(timer) do
+    :erlang.cancel_timer(timer)
+    receive do
+      :timed_out -> :ok
+
+    after
+      0 -> :ok
+    end
   end
 end

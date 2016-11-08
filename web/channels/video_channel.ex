@@ -82,7 +82,7 @@ defmodule Rumbl.VideoChannel do
 
   defp compute_additional_info(annotation, socket) do
     # call our info system for 1 result, maximum wait 10 secs.
-    for result <- Rumbl.InfoSys.compute(annotation.body, limits: 1, timeout: 10_000) do
+    for result <- InfoSys.compute(annotation.body, limits: 1, timeout: 10_000) do
       attrs = %{url: result.url, body: result.text, at: annotation.at}
       info_changeset =
         # query db for user matching each backend

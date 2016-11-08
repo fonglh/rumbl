@@ -16,7 +16,9 @@ defmodule Rumbl do
       # worker(Rumbl.Worker, [arg1, arg2, arg3]),
 
       # Add new supervisor to app's supervision tree
-      supervisor(Rumbl.InfoSys.Supervisor, []),
+      # commented out the line below as starting this is now the responsibility of
+      # the InfoSys application under the rumbrella parent project.
+      #supervisor(Rumbl.InfoSys.Supervisor, []),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
